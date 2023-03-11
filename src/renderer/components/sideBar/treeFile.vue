@@ -29,6 +29,7 @@ import { mapState } from 'vuex'
 import { fileMixins } from '../../mixins'
 import { showContextMenu } from '../../contextMenu/sideBar'
 import bus from '../../bus'
+import draggable from '../../../../node_modules/vuedraggable'
 
 export default {
   mixins: [fileMixins],
@@ -49,7 +50,8 @@ export default {
     }
   },
   components: {
-    FileIcon
+    FileIcon,
+    draggable
   },
   computed: {
     ...mapState({
@@ -86,6 +88,9 @@ export default {
       if (newName) {
         this.$store.dispatch('RENAME_IN_SIDEBAR', newName)
       }
+    },
+    onEnd (event) {
+      console.log('Reordered list: ', this.list)
     }
   }
 }

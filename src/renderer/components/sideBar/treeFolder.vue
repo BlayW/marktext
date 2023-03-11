@@ -40,11 +40,13 @@
         @keydown.enter="handleInputEnter"
         v-model="createName"
       >
+      <draggable v-model="list" @end="onDrop">
       <file
         v-for="(file, index) of folder.files" :key="index + 'file'"
         :file="file"
         :depth="depth + 1"
       ></file>
+    </draggable>
     </div>
   </div>
 </template>
@@ -54,6 +56,7 @@ import { mapState } from 'vuex'
 import { showContextMenu } from '../../contextMenu/sideBar'
 import bus from '../../bus'
 import { createFileOrDirectoryMixins } from '../../mixins'
+import draggable from '../../../../node_modules/vuedraggable'
 
 export default {
   mixins: [createFileOrDirectoryMixins],
@@ -75,7 +78,8 @@ export default {
     }
   },
   components: {
-    File: () => import('./treeFile.vue')
+    File: () => import('./treeFile.vue'),
+    draggable
   },
   computed: {
     ...mapState({

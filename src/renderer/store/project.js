@@ -8,7 +8,7 @@ import notice from '../services/notification'
 import { getFileStateFromData } from './help'
 import { hasMarkdownExtension } from '../../common/filesystem/paths'
 
-const state = {
+export const state = {
   activeItem: {},
   createCache: {},
   // Use to cache newly created filename, for open immediately.
@@ -18,9 +18,9 @@ const state = {
   projectTree: null
 }
 
-const getters = {}
+export const getters = {}
 
-const mutations = {
+export const mutations = {
   SET_ROOT_DIRECTORY (state, pathname) {
     let name = path.basename(pathname)
     if (!name) {
@@ -37,7 +37,10 @@ const mutations = {
       isFile: false,
       isMarkdown: false,
       folders: [],
-      files: []
+      files: [],
+      get allItems () {
+        return [...this.files, ...this.folders].sort((a, b) => a.name.localeCompare(b.name))
+      }
     }
   },
   SET_NEWFILENAME (state, name) {
@@ -73,7 +76,7 @@ const mutations = {
   }
 }
 
-const actions = {
+export const actions = {
   LISTEN_FOR_LOAD_PROJECT ({ commit, dispatch }) {
     ipcRenderer.on('mt::open-directory', (e, pathname) => {
       commit('SET_ROOT_DIRECTORY', pathname)
@@ -228,4 +231,7 @@ const actions = {
   }
 }
 
+export const makeBinder = function () {
+  console.log('test5')
+}
 export default { state, getters, mutations, actions }

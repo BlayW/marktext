@@ -35,9 +35,11 @@
   },
   "dependencies": {
     "@electron/remote": "^2.0.8",
+    "@he-tree/vue": "^2.2.5",
     "@hfelix/electron-localshortcut": "^4.0.1",
     "@marktext/file-icons": "^1.0.6",
     "@octokit/rest": "^18.12.0",
+    "@vue/composition-api": "^1.7.1",
     "arg": "^5.0.1",
     "axios": "^0.26.1",
     "ced": "^2.0.0",
@@ -82,8 +84,10 @@
     "vega-lite": "^5.2.0",
     "vscode-ripgrep": "^1.12.1",
     "vue": "^2.6.14",
+    "vue-draggable": "^2.0.6",
     "vue-electron": "^1.0.6",
     "vue-router": "^3.5.3",
+    "vuedraggable": "^2.24.3",
     "vuex": "^3.6.2",
     "webfontloader": "^1.6.28"
   },

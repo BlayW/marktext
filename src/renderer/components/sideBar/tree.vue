@@ -1,7 +1,6 @@
 <template>
   <div class="tree-view">
     <div class="title">
-      <!-- Placeholder -->
     </div>
 
     <!-- Opened tabs -->
@@ -23,13 +22,6 @@
         </a>
       </div>
       <div class="opened-files-list" v-show="showOpenedFiles">
-        <transition-group name="list">
-          <opened-file
-            v-for="tab of tabs"
-            :key="tab.id"
-            :file="tab"
-          ></opened-file>
-        </transition-group>
       </div>
     </div>
 
@@ -44,6 +36,7 @@
         <span class="default-cursor text-overflow" @click.stop="toggleDirectories()">{{ projectTree.name }}</span>
       </div>
       <div class="tree-wrapper" v-show="showDirectories">
+        <draggable v-model="list" @end="onDrop">
         <folder
           v-for="(folder, index) of projectTree.folders" :key="index + 'folder'"
           :folder="folder"
@@ -61,6 +54,53 @@
           :file="file"
           :depth="depth"
         ></file>
+      </draggable>
+        <div class="empty-project" v-if="projectTree.files.length === 0 && projectTree.folders.length === 0">
+          <span>Empty project</span>
+          <a href="javascript:;" @click.stop="createFile">Create File</a>
+        </div>
+      </div>
+    </div>
+    <!-- Binder tree view -->
+    <div
+      class="project-tree" v-if="projectTree"
+    >
+      <div class="title">
+        <svg class="icon icon-arrow" :class="{'fold': !showDirectories}" aria-hidden="true" @click.stop="toggleDirectories()">
+          <use xlink:href="#icon-arrow"></use>
+        </svg>
+        <span class="default-cursor text-overflow" @click.stop="toggleDirectories()">{{ projectTree.name }}</span>
+      </div>
+      <div class="tree-wrapper" v-show="showDirectories">
+        <draggable v-model="list" @end="onDrop">
+          <div v-for="item in projectTree.allItems">
+          <div v-if="item.isDirectory">
+          <folder
+          :folder="item"
+          :depth="depth"
+        ></folder>
+        <input
+          type="text" class="new-input" v-show="createCache.dirname === projectTree.pathname"
+          :style="{'margin-left': `${depth * 5 + 15}px` }"
+          ref="input"
+          v-model="createName"
+          @keydown.enter="handleInputEnter"
+        >
+          </div>
+          <div v-else-if="item.isFile">
+          <file
+          :file="item"
+          :depth="depth"
+        ></file>
+          </div>
+          </div>
+      </draggable>
+      <button class="button-primary" @click="makeBinder" v-if="!isBinder">
+          Make Binder
+        </button>
+        <!-- <button class="button-primary" @click="checkBinder">
+          Check Binder
+        </button> -->
         <div class="empty-project" v-if="projectTree.files.length === 0 && projectTree.folders.length === 0">
           <span>Empty project</span>
           <a href="javascript:;" @click.stop="createFile">Create File</a>
@@ -88,6 +128,13 @@ import { mapState } from 'vuex'
 import bus from '../../bus'
 import { createFileOrDirectoryMixins } from '../../mixins'
 import FolderIcon from '@/assets/icons/undraw_folder.svg'
+import FileIcon from './icon.vue'
+import draggable from '../../../../node_modules/vuedraggable'
+import fs from 'fs'
+import path from 'path'
+
+let nodeConsole = require('console')
+let myConsole = new nodeConsole.Console(process.stdout, process.stderr)
 
 export default {
   mixins: [createFileOrDirectoryMixins],
@@ -98,7 +145,8 @@ export default {
       showDirectories: true,
       showNewInput: false,
       showOpenedFiles: true,
-      createName: ''
+      createName: '',
+      isBinder: false
     }
   },
   props: {
@@ -106,7 +154,8 @@ export default {
       validator: function (value) {
         return typeof value === 'object'
       },
-      required: true
+      required: true,
+      default: () => []
     },
     openedFiles: Array,
     tabs: Array
@@ -114,7 +163,9 @@ export default {
   components: {
     Folder,
     File,
-    OpenedFile
+    FileIcon,
+    OpenedFile,
+    draggable
   },
   computed: {
     ...mapState({
@@ -147,6 +198,12 @@ export default {
         }
       })
     })
+    this.checkBinder()
+  },
+  watch: {
+    projectTree () {
+      this.checkBinder()
+    }
   },
   methods: {
     openFolder () {
@@ -164,6 +221,33 @@ export default {
     },
     toggleDirectories () {
       this.showDirectories = !this.showDirectories
+    },
+    onDrop (event) {
+      myConsole.log('onDrop Test')
+    },
+    makeBinder () {
+      if (this.isBinder) {
+        return this.isBinder
+      } else {
+        let filePath = path.join(this.projectTree.pathname, '.markTextBinder.md')
+        fs.appendFile(filePath, 'This is a MarkText Binder!', function (err) {
+          if (err) throw err
+          this.isBinder = true
+          myConsole.log('I did the thing! isBinder =', this.isBinder)
+        })
+      }
+    },
+    checkBinder () {
+      let folderPath = this.projectTree.pathname
+      let fileName = '.markTextBinder.md'
+      let filePath = path.join(folderPath, fileName)
+      fs.readFile(filePath, 'utf8', (err, data) => {
+        if (err) {
+          this.isBinder = false
+        } else {
+          this.isBinder = true
+        }
+      })
     }
   }
 }
