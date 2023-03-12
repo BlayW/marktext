@@ -39,6 +39,7 @@ export const mutations = {
       folders: [],
       files: [],
       get allItems () {
+        // return flattenArray([...this.files, ...this.folders].sort((a, b) => a.name.localeCompare(b.name)))
         return [...this.files, ...this.folders].sort((a, b) => a.name.localeCompare(b.name))
       }
     }
@@ -231,7 +232,4 @@ export const actions = {
   }
 }
 
-export const makeBinder = function () {
-  console.log('test5')
-}
 export default { state, getters, mutations, actions }

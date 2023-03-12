@@ -27,13 +27,18 @@
 
     <!-- Project tree view -->
     <div
-      class="project-tree" v-if="projectTree"
+      class="project-tree" v-if="projectTree && !isBinder"
     >
       <div class="title">
         <svg class="icon icon-arrow" :class="{'fold': !showDirectories}" aria-hidden="true" @click.stop="toggleDirectories()">
           <use xlink:href="#icon-arrow"></use>
         </svg>
         <span class="default-cursor text-overflow" @click.stop="toggleDirectories()">{{ projectTree.name }}</span>
+        <a href="javascript:;" @click.stop="makeBinder()" title="Make Binder">
+          <svg class="icon" aria-hidden="true">
+            <use xlink:href="#icon-list"></use>
+          </svg>
+        </a>
       </div>
       <div class="tree-wrapper" v-show="showDirectories">
         <draggable v-model="list" @end="onDrop">
@@ -63,7 +68,7 @@
     </div>
     <!-- Binder tree view -->
     <div
-      class="project-tree" v-if="projectTree"
+      class="project-tree" v-if="projectTree && isBinder"
     >
       <div class="title">
         <svg class="icon icon-arrow" :class="{'fold': !showDirectories}" aria-hidden="true" @click.stop="toggleDirectories()">
@@ -95,12 +100,47 @@
           </div>
           </div>
       </draggable>
-      <button class="button-primary" @click="makeBinder" v-if="!isBinder">
-          Make Binder
-        </button>
-        <!-- <button class="button-primary" @click="checkBinder">
-          Check Binder
-        </button> -->
+        <div class="empty-project" v-if="projectTree.files.length === 0 && projectTree.folders.length === 0">
+          <span>Empty project</span>
+          <a href="javascript:;" @click.stop="createFile">Create File</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Binder tree view TESTING-->
+    <div
+      class="project-tree" v-if="projectTree && isBinder"
+    >
+      <div class="title">
+        <svg class="icon icon-arrow" :class="{'fold': !showDirectories}" aria-hidden="true" @click.stop="toggleDirectories()">
+          <use xlink:href="#icon-arrow"></use>
+        </svg>
+        <span class="default-cursor text-overflow" @click.stop="toggleDirectories()">{{ projectTree.name }} Test</span>
+      </div>
+      <div class="tree-wrapper" v-show="showDirectories">
+        <draggable v-model="list" @end="onDrop">
+          <div v-for="item in binderTree">
+          <div v-if="item.isDirectory">
+          <folder
+          :folder="item"
+          :depth="depth"
+        ></folder>
+        <input
+          type="text" class="new-input" v-show="createCache.dirname === projectTree.pathname"
+          :style="{'margin-left': `${depth * 5 + 15}px` }"
+          ref="input"
+          v-model="createName"
+          @keydown.enter="handleInputEnter"
+        >
+          </div>
+          <div v-else-if="item.isFile">
+          <file
+          :file="item"
+          :depth="depth"
+        ></file>
+          </div>
+          </div>
+      </draggable>
         <div class="empty-project" v-if="projectTree.files.length === 0 && projectTree.folders.length === 0">
           <span>Empty project</span>
           <a href="javascript:;" @click.stop="createFile">Create File</a>
@@ -146,7 +186,8 @@ export default {
       showNewInput: false,
       showOpenedFiles: true,
       createName: '',
-      isBinder: false
+      isBinder: false,
+      binderTree: []
     }
   },
   props: {
@@ -199,9 +240,14 @@ export default {
       })
     })
     this.checkBinder()
+    this.makeBinderTree()
   },
   watch: {
     projectTree () {
+      this.checkBinder()
+      this.makeBinderTree()
+    },
+    isBinder () {
       this.checkBinder()
     }
   },
@@ -225,10 +271,56 @@ export default {
     onDrop (event) {
       myConsole.log('onDrop Test')
     },
+    flattenArray (array) {
+      myConsole.log('flattenArray Triggered')
+      let result = []
+      array.forEach((item) => {
+        result.push(item)
+        myConsole.log('step 1 reached')
+        if (item.isDirectory) {
+          myConsole.log('step 2 reached')
+          const allSubItems = [...item.files, ...item.folders].sort((a, b) => a.name.localeCompare(b.name))
+          myConsole.log('step 3 reached')
+          const children = this.flattenArray(allSubItems)
+          children.forEach((child) => {
+            result.push(child)
+          })
+        }
+      })
+      myConsole.log(result)
+      return result
+    },
+    renameFiles (arr) {
+      let index = 0
+      const traverse = (node, parentIndex = '') => {
+        if (node.isDirectory) {
+          const sortedChildren = [...node.files, ...node.folders].sort((a, b) => a.name.localeCompare(b.name))
+          sortedChildren.forEach((child, i) => {
+            const childIndex = parentIndex ? parentIndex + '.' + i : index + '.' + i
+            traverse(child, childIndex)
+          })
+        }
+        if (node.name) {
+          const newName = parentIndex ? parentIndex + '#' + node.name : index + '#' + node.name
+          const newPath = node.pathname.substring(0, node.pathname.lastIndexOf('/')) + '/' + newName
+          fs.rename(node.pathname, newPath, (err) => {
+            if (err) throw err
+          })
+        }
+      }
+      arr.forEach((node) => {
+        traverse(node)
+        index++
+      })
+      return arr
+    },
     makeBinder () {
       if (this.isBinder) {
+        myConsole.log('this is a Binder already')
         return this.isBinder
       } else {
+        let binderTree = [...this.projectTree.files, ...this.projectTree.folders].sort((a, b) => a.name.localeCompare(b.name))
+        this.renameFiles(binderTree)
         let filePath = path.join(this.projectTree.pathname, '.markTextBinder.md')
         fs.appendFile(filePath, 'This is a MarkText Binder!', function (err) {
           if (err) throw err
@@ -248,6 +340,9 @@ export default {
           this.isBinder = true
         }
       })
+    },
+    makeBinderTree () {
+      this.binderTree = this.flattenArray(this.projectTree.allItems)
     }
   }
 }
