@@ -121,10 +121,10 @@
         <draggable v-model="list" @end="onDrop">
           <div v-for="item in binderTree">
           <div v-if="item.isDirectory">
-          <folder
+          <folder-b
           :folder="item"
-          :depth="depth"
-        ></folder>
+          :depth="getDepth(item.name)"
+        ></folder-b>
         <input
           type="text" class="new-input" v-show="createCache.dirname === projectTree.pathname"
           :style="{'margin-left': `${depth * 5 + 15}px` }"
@@ -136,7 +136,7 @@
           <div v-else-if="item.isFile">
           <file
           :file="item"
-          :depth="depth"
+          :depth="getDepth(item.name)"
         ></file>
           </div>
           </div>
@@ -162,7 +162,9 @@
 
 <script>
 import Folder from './treeFolder.vue'
+import FolderB from './treeFolderB.vue'
 import File from './treeFile.vue'
+import FileB from './treeFileB.vue'
 import OpenedFile from './treeOpenedTab.vue'
 import { mapState } from 'vuex'
 import bus from '../../bus'
@@ -203,7 +205,9 @@ export default {
   },
   components: {
     Folder,
+    FolderB,
     File,
+    FileB,
     FileIcon,
     OpenedFile,
     draggable
@@ -272,22 +276,17 @@ export default {
       myConsole.log('onDrop Test')
     },
     flattenArray (array) {
-      myConsole.log('flattenArray Triggered')
       let result = []
       array.forEach((item) => {
         result.push(item)
-        myConsole.log('step 1 reached')
         if (item.isDirectory) {
-          myConsole.log('step 2 reached')
           const allSubItems = [...item.files, ...item.folders].sort((a, b) => a.name.localeCompare(b.name))
-          myConsole.log('step 3 reached')
           const children = this.flattenArray(allSubItems)
           children.forEach((child) => {
             result.push(child)
           })
         }
       })
-      myConsole.log(result)
       return result
     },
     renameFiles (arr) {
@@ -343,6 +342,14 @@ export default {
     },
     makeBinderTree () {
       this.binderTree = this.flattenArray(this.projectTree.allItems)
+    },
+    getDepth (str) {
+      myConsole.log('getDepth was triggered.')
+      const integerSubstring = str.split('#')[0]
+      if (!integerSubstring.includes('.')) {
+        return 0
+      }
+      return integerSubstring.split('.').length - 1
     }
   }
 }
