@@ -41,7 +41,7 @@
         </a>
       </div>
       <div class="tree-wrapper" v-show="showDirectories">
-        <draggable v-model="list" @end="onDrop">
+        <!-- <draggable v-model="list" @end="onDrop"> -->
         <folder
           v-for="(folder, index) of projectTree.folders" :key="index + 'folder'"
           :folder="folder"
@@ -59,7 +59,7 @@
           :file="file"
           :depth="depth"
         ></file>
-      </draggable>
+      <!-- </draggable> -->
         <div class="empty-project" v-if="projectTree.files.length === 0 && projectTree.folders.length === 0">
           <span>Empty project</span>
           <a href="javascript:;" @click.stop="createFile">Create File</a>
@@ -77,7 +77,7 @@
         <span class="default-cursor text-overflow" @click.stop="toggleDirectories()">{{ projectTree.name }}</span>
       </div>
       <div class="tree-wrapper" v-show="showDirectories">
-        <draggable v-model="list" @end="onDrop">
+        <!-- <draggable v-model="list" @end="onDrop"> -->
           <div v-for="item in projectTree.allItems">
           <div v-if="item.isDirectory">
           <folder
@@ -99,7 +99,7 @@
         ></file>
           </div>
           </div>
-      </draggable>
+      <!-- </draggable> -->
         <div class="empty-project" v-if="projectTree.files.length === 0 && projectTree.folders.length === 0">
           <span>Empty project</span>
           <a href="javascript:;" @click.stop="createFile">Create File</a>
@@ -118,12 +118,17 @@
         <span class="default-cursor text-overflow" @click.stop="toggleDirectories()">{{ projectTree.name }} Test</span>
       </div>
       <div class="tree-wrapper" v-show="showDirectories">
-        <draggable v-model="list" @end="onDrop">
+        <!-- <draggable v-model="list" @end="onDrop"> -->
           <div v-for="item in binderTree">
           <div v-if="item.isDirectory">
           <folder-b
           :folder="item"
           :depth="getDepth(item.name)"
+          :binderTree="binderTree"
+          :id=item.id
+          ref="folderComponents"
+          v-on:hide-folder = "hideFolders"
+          v-on:show-folder = "showFolders"
         ></folder-b>
         <input
           type="text" class="new-input" v-show="createCache.dirname === projectTree.pathname"
@@ -134,13 +139,16 @@
         >
           </div>
           <div v-else-if="item.isFile">
-          <file
+          <file-b
           :file="item"
           :depth="getDepth(item.name)"
-        ></file>
+          ref="fileComponents"
+          draggable
+          @dragstart="startDrag($event, item)"
+        ></file-b>
           </div>
           </div>
-      </draggable>
+      <!-- </draggable> -->
         <div class="empty-project" v-if="projectTree.files.length === 0 && projectTree.folders.length === 0">
           <span>Empty project</span>
           <a href="javascript:;" @click.stop="createFile">Create File</a>
@@ -171,7 +179,7 @@ import bus from '../../bus'
 import { createFileOrDirectoryMixins } from '../../mixins'
 import FolderIcon from '@/assets/icons/undraw_folder.svg'
 import FileIcon from './icon.vue'
-import draggable from '../../../../node_modules/vuedraggable'
+// import draggable from '../../../../node_modules/vuedraggable'
 import fs from 'fs'
 import path from 'path'
 
@@ -209,8 +217,8 @@ export default {
     File,
     FileB,
     FileIcon,
-    OpenedFile,
-    draggable
+    OpenedFile
+    // draggable
   },
   computed: {
     ...mapState({
@@ -252,7 +260,7 @@ export default {
       this.makeBinderTree()
     },
     isBinder () {
-      this.checkBinder()
+      this.makeBinderTree()
     }
   },
   methods: {
@@ -272,9 +280,9 @@ export default {
     toggleDirectories () {
       this.showDirectories = !this.showDirectories
     },
-    onDrop (event) {
-      myConsole.log('onDrop Test')
-    },
+    // onDrop (event) {
+    //   myConsole.log('onDrop Test')
+    // },
     flattenArray (array) {
       let result = []
       array.forEach((item) => {
@@ -330,10 +338,12 @@ export default {
     },
     checkBinder () {
       let folderPath = this.projectTree.pathname
+      myConsole.log(this.projectTree.pathname)
       let fileName = '.markTextBinder.md'
       let filePath = path.join(folderPath, fileName)
       fs.readFile(filePath, 'utf8', (err, data) => {
         if (err) {
+          myConsole.log('not Binder isBinder:', this.isBinder)
           this.isBinder = false
         } else {
           this.isBinder = true
@@ -341,15 +351,30 @@ export default {
       })
     },
     makeBinderTree () {
-      this.binderTree = this.flattenArray(this.projectTree.allItems)
+      if (this.isBinder) {
+        this.binderTree = this.flattenArray(this.projectTree.allItems)
+      } else { this.checkBinder() }
     },
     getDepth (str) {
-      myConsole.log('getDepth was triggered.')
       const integerSubstring = str.split('#')[0]
       if (!integerSubstring.includes('.')) {
         return 0
       }
       return integerSubstring.split('.').length - 1
+    },
+    hideFolders (toHide) {
+      const folderComponents = this.$refs.folderComponents.concat(this.$refs.fileComponents)
+      toHide.forEach((item) => {
+        const index = folderComponents.findIndex((element) => element.id === item)
+        folderComponents[index]._data.isHidden = true
+      })
+    },
+    showFolders (toShow) {
+      const folderComponents = this.$refs.folderComponents.concat(this.$refs.fileComponents)
+      toShow.forEach((item) => {
+        const index = folderComponents.findIndex((element) => element.id === item)
+        folderComponents[index]._data.isHidden = false
+      })
     }
   }
 }

@@ -2,21 +2,14 @@
   <div
     class="side-bar-folder"
   >
-  <div class="drop-zone"
-  @drop="onDrop($event, 1)"
-      @dragover.prevent
-      @dragenter.prevent>
-  </div>
     <div
-      class="folder-name" @click="folderNameClick(folder)"
+      class="folder-name" @click="folderNameClick"
       :style="{'padding-left': `${(depth * 20) + 20}px`}"
       :class="[{ 'active': folder.id === activeItem.id }]"
       :title="folder.pathname"
       ref="folder"
       v-show="!isHidden"
-      draggable
-      @dragstart="startDrag($event, folder)"
-      >
+    >
       <svg class="icon" aria-hidden="true">
         <use :xlink:href="`#${folder.isCollapsed ? 'icon-folder-close' : 'icon-folder-open'}`"></use>
       </svg>
@@ -115,25 +108,16 @@ export default {
     })
   },
   methods: {
-    folderNameClick (folder) {
-      if (folder.isCollapsed) {
-        const toShow = []
-        const allItems = [].concat(folder.folders).concat(folder.files)
-        allItems.forEach((item) => toShow.push(item.id))
-        this.$emit('show-folder', toShow)
-        folder.isCollapsed = false
-      } else {
-        const toHide = []
-        const prefix = folder.name.substring(0, folder.name.indexOf('#')) + '.'
-        this.binderTree.forEach((item) => {
-          if (item.name.startsWith(prefix)) {
-            toHide.push(item.id)
-            if (item.isDirectory) { item.isCollapsed = true }
-          }
-        })
-        this.$emit('hide-folder', toHide)
-        folder.isCollapsed = true
-      }
+    folderNameClick () {
+      const toHide = []
+      const allItems = [].concat(this.folder.folders).concat(this.folder.files)
+      allItems.forEach((item) => {
+        toHide.push(item.id)
+      })
+      myConsole.log(toHide)
+      this.$emit('hide-folder', toHide)
+      myConsole.log('emitted', toHide)
+      this.folder.isCollapsed = !this.folder.isCollapsed
     },
     noop () {},
     focusRenameInput () {
@@ -149,17 +133,6 @@ export default {
       if (newName) {
         this.$store.dispatch('RENAME_IN_SIDEBAR', newName)
       }
-    },
-    startDrag (evt, item) {
-      evt.dataTransfer.dropEffect = 'move'
-      evt.dataTransfer.effectAllowed = 'move'
-      evt.dataTransfer.setData('itemID', item.id)
-    },
-    onDrop (evt, list) {
-      myConsole.log('dropped')
-      const itemID = evt.dataTransfer.getData('itemID')
-      const item = this.items.find((item) => item.id === itemID)
-      item.list = list
     }
   }
 }
@@ -194,9 +167,5 @@ export default {
     background: var(--floatBorderColor);
     width: 70%;
     border-radius: 3px;
-  }
-  .drop-zone {
-    margin-bottom: 10px;
-    padding: 10px
   }
 </style>

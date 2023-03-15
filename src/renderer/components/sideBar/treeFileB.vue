@@ -6,7 +6,11 @@
     @click="handleFileClick()"
     :class="[{'current': currentFile.pathname === file.pathname, 'active': file.id === activeItem.id }]"
     ref="file"
-  >
+    v-show="!isHidden"
+    draggable
+    @dragstart="startDrag($event, file)"
+    @drop="onDrop($event)"
+    >
     <file-icon
       :name="file.name"
     ></file-icon>
@@ -29,14 +33,18 @@ import { mapState } from 'vuex'
 import { fileMixins } from '../../mixins'
 import { showContextMenu } from '../../contextMenu/sideBar'
 import bus from '../../bus'
-import draggable from 'vuedraggable'
+// import draggable from 'vuedraggable'
+let nodeConsole = require('console')
+let myConsole = new nodeConsole.Console(process.stdout, process.stderr)
 
 export default {
   mixins: [fileMixins],
   name: 'file',
   data () {
     return {
-      newName: ''
+      newName: '',
+      isHidden: Boolean(this.depth),
+      id: this.file.id
     }
   },
   props: {
@@ -50,8 +58,8 @@ export default {
     }
   },
   components: {
-    FileIcon,
-    draggable
+    FileIcon
+    // draggable
   },
   computed: {
     ...mapState({
@@ -91,6 +99,17 @@ export default {
     },
     onEnd (event) {
       console.log('Reordered list: ', this.list)
+    },
+    startDrag (evt, item) {
+      evt.dataTransfer.dropEffect = 'move'
+      evt.dataTransfer.effectAllowed = 'move'
+      evt.dataTransfer.setData('draggedItem', item)
+      myConsole.log(item.name)
+    },
+    onDrop (evt) {
+      myConsole.log('triggered')
+      // const draggedItem = evt.dataTransfer.getData('draggedItem')
+      // myConsole.log('draggedItem: ', draggedItem, '\n dropped on: ', list)
     }
   }
 }
